@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101a2a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Run Pace">
+  <title>Run Pace · Running Calculator</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#101a2a; color:#f4f7ff; }
+    * { box-sizing: border-box; }
+    body { min-height:100vh; margin:0; padding:max(28px, env(safe-area-inset-top)) 18px max(30px, env(safe-area-inset-bottom)); background:radial-gradient(ellipse at top, #24344a 0, #101a2a 56%); }
+    main { max-width:510px; margin:0 auto; }
+    .eyebrow { color:#9bc3dd; font-size:12px; letter-spacing:.17em; font-weight:800; text-transform:uppercase; }
+    h1 { font-size:clamp(32px,8vw,42px); line-height:1.08; letter-spacing:-.045em; margin:9px 0 10px; }
+    .intro { color:#bfccda; margin:0 0 26px; line-height:1.5; font-size:15px; }
+    .panel { background:#19283a; border:1px solid #33465b; border-radius:24px; padding:20px; box-shadow:0 15px 45px #0002; }
+    .control-label { display:block; font-size:12px; color:#aebfd0; letter-spacing:.07em; font-weight:800; text-transform:uppercase; margin-bottom:12px; }
+    .segments { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; border:1px solid #31465b; background:#102034; border-radius:13px; padding:5px; margin-bottom:22px; }
+    .segments button { appearance:none; border:0; background:transparent; color:#bfccda; font-size:14px; font-weight:700; border-radius:9px; padding:11px 4px; cursor:pointer; min-height:44px; }
+    .segments button[aria-pressed="true"] { background:#fb944f; color:#172132; box-shadow:0 2px 7px #0003; }
+    .field { margin-top:17px; }
+    .field-title { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:15px; font-weight:750; margin-bottom:8px; }
+    .unit { color:#9fb4c9; font-size:12px; font-weight:600; }
+    input { display:block; width:100%; min-width:0; appearance:none; border-radius:13px; border:1px solid #4a5e74; background:#101f31; color:#fff; font-size:23px; font-weight:750; font-variant-numeric:tabular-nums; padding:12px; height:59px; outline:none; text-align:center; }
+    #distance { text-align:left; padding-left:15px; }
+    input::placeholder { color:#8296aa; }
+    input:focus { border-color:#ffa56c; box-shadow:0 0 0 3px #fb944f30; }
+    input[readonly] { background:#253e4a; border-color:#6a9e9d; color:#9ce0c8; }
+    .parts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .parts.three { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .part label { display:block; font-size:12px; color:#b7c7d7; margin:0 0 6px; }
+    .hint { font-size:12px; color:#95aabe; margin:7px 0 0; line-height:1.45; }
+    .result { margin-top:23px; border:1px solid #5b8779; background:#193a3b; border-radius:16px; padding:16px; min-height:88px; }
+    .result-title { color:#a2d0c1; text-transform:uppercase; letter-spacing:.1em; font-size:11px; font-weight:800; }
+    .result-value { font-size:clamp(26px,7vw,35px); font-weight:850; letter-spacing:-.04em; font-variant-numeric:tabular-nums; margin-top:5px; overflow-wrap:anywhere; }
+    .result-value.pending { color:#c0cfdb; font-size:15px; letter-spacing:0; font-weight:500; line-height:1.45; }
+    .reset { width:100%; min-height:45px; margin-top:13px; background:transparent; color:#dce7f2; border:1px solid #52657a; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; }
+    .footer { text-align:center; color:#97a9bc; font-size:12px; line-height:1.6; margin:18px 0; }
+    button:focus-visible { outline:3px solid #a5e0ff; outline-offset:2px; }
+    @media (prefers-reduced-motion:no-preference) { input,button { transition:border-color .15s,background-color .15s; } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Your running toolkit</div>
+  <h1>Run Pace<span style="color:#fb944f">.</span></h1>
+  <p class="intro">Choose what to calculate, then enter the other two values. All measurements are metric.</p>
+  <section class="panel" aria-label="Running pace calculator">
+    <span class="control-label" id="calculate-label">Calculate</span>
+    <div class="segments" role="group" aria-labelledby="calculate-label">
+      <button type="button" data-target="time" aria-pressed="true">Time</button>
+      <button type="button" data-target="pace" aria-pressed="false">Pace</button>
+      <button type="button" data-target="distance" aria-pressed="false">Distance</button>
+    </div>
+    <div class="field">
+      <label class="field-title" for="distance">Distance <span class="unit">kilometres (km)</span></label>
+      <input id="distance" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 21.1">
+      <p class="hint">Enter a positive distance, e.g. 5, 10 or 21.0975.</p>
+    </div>
+    <div class="field" role="group" aria-labelledby="pace-title">
+      <div class="field-title" id="pace-title">Pace <span class="unit">min/km</span></div>
+      <div class="parts">
+        <div class="part"><label for="pace-minutes">Minutes</label><input id="pace-minutes" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="4" aria-label="Pace minutes per kilometre"></div>
+        <div class="part"><label for="pace-seconds">Seconds</label><input id="pace-seconds" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="30" aria-label="Pace seconds per kilometre"></div>
+      </div>
+      <p class="hint">For a 4:30 pace, enter 4 minutes and 30 seconds.</p>
+    </div>
+    <div class="field" role="group" aria-labelledby="time-title">
+      <div class="field-title" id="time-title">Time <span class="unit">hh:mm:ss</span></div>
+      <div class="parts three">
+        <div class="part"><label for="time-hours">Hours</label><input id="time-hours" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="1" aria-label="Time hours"></div>
+        <div class="part"><label for="time-minutes">Minutes</label><input id="time-minutes" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="35" aria-label="Time minutes"></div>
+        <div class="part"><label for="time-seconds">Seconds</label><input id="time-seconds" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="00" aria-label="Time seconds"></div>
+      </div>
+      <p class="hint">For 1:35:00, enter 1 hour and 35 minutes. Leave unused boxes blank.</p>
+    </div>
+    <div class="result" role="status" aria-live="polite" aria-atomic="true">
+      <div class="result-title" id="result-title">Calculated time</div>
+      <div class="result-value pending" id="result-value">Enter distance and pace above.</div>
+    </div>
+    <button class="reset" type="button" id="reset">Clear all</button>
+  </section>
+  <p class="footer">Times and paces are rounded to the nearest second. No sign-in required.</p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const groups = {
+    distance: ['distance'],
+    pace: ['pace-minutes', 'pace-seconds'],
+    time: ['time-hours', 'time-minutes', 'time-seconds']
+  };
+  const inputs = Object.fromEntries(Object.values(groups).flat().map(id => [id, document.getElementById(id)]));
+  const resultTitle = document.getElementById('result-title');
+  const resultValue = document.getElementById('result-value');
+  const buttons = [...document.querySelectorAll('[data-target]')];
+  let target = 'time';
+  const pad = n => String(n).padStart(2, '0');
+  const raw = id => inputs[id].value.trim();
+  const hasEntry = group => groups[group].some(id => raw(id) !== '');
+  const isInteger = value => /^\d+$/.test(value);
+
+  function parseDistance() {
+    const value = raw('distance');
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) return NaN;
+    const km = Number(value);
+    return Number.isFinite(km) && km > 0 ? km : NaN;
+  }
+  function parsePace() {
+    const m = raw('pace-minutes');
+    const s = raw('pace-seconds');
+    if (!hasEntry('pace') || (m && !isInteger(m)) || (s && !isInteger(s))) return NaN;
+    const seconds = Number(s || 0);
+    const total = Number(m || 0) * 60 + seconds;
+    return seconds < 60 && Number.isFinite(total) && total > 0 ? total : NaN;
+  }
+  function parseTime() {
+    const h = raw('time-hours');
+    const m = raw('time-minutes');
+    const s = raw('time-seconds');
+    if (!hasEntry('time') || [h, m, s].some(v => v && !isInteger(v))) return NaN;
+    const minutes = Number(m || 0);
+    const seconds = Number(s || 0);
+    const total = Number(h || 0) * 3600 + minutes * 60 + seconds;
+    return minutes < 60 && seconds < 60 && Number.isFinite(total) && total > 0 ? total : NaN;
+  }
+  function writeParts(group, values) {
+    groups[group].forEach((id, index) => { inputs[id].value = values[index]; });
+  }
+  function clearGroup(group) { writeParts(group, groups[group].map(() => '')); }
+  function formatTime(total) {
+    const whole = Math.round(total);
+    return `${pad(Math.floor(whole / 3600))}:${pad(Math.floor((whole % 3600) / 60))}:${pad(whole % 60)}`;
+  }
+  function formatPace(total) {
+    const whole = Math.round(total);
+    return `${Math.floor(whole / 60)}:${pad(whole % 60)}`;
+  }
+  function formatDistance(km) {
+    return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 4 }).format(km);
+  }
+  function show(message, pending) {
+    resultValue.classList.toggle('pending', pending);
+    resultValue.textContent = message;
+  }
+  function update() {
+    const required = Object.keys(groups).filter(group => group !== target);
+    resultTitle.textContent = `Calculated ${target}`;
+    clearGroup(target);
+    if (required.some(group => !hasEntry(group))) {
+      show(`Enter ${required.join(' and ')} above.`, true);
+      return;
+    }
+    const parse = { distance: parseDistance, pace: parsePace, time: parseTime };
+    const values = Object.fromEntries(required.map(group => [group, parse[group]() ]));
+    if (required.some(group => !Number.isFinite(values[group]) || values[group] <= 0)) {
+      show('Check your entries. Use positive values and keep seconds (and time minutes) between 0 and 59.', true);
+      return;
+    }
+    let answer;
+    if (target === 'time') answer = values.distance * values.pace;
+    if (target === 'pace') answer = values.time / values.distance;
+    if (target === 'distance') answer = values.time / values.pace;
+    if (!Number.isFinite(answer) || answer <= 0) {
+      show('These values are too large to calculate.', true);
+      return;
+    }
+    if (target === 'time') {
+      const whole = Math.round(answer);
+      writeParts('time', [String(Math.floor(whole / 3600)), pad(Math.floor((whole % 3600) / 60)), pad(whole % 60)]);
+      show(formatTime(answer), false);
+    } else if (target === 'pace') {
+      const whole = Math.round(answer);
+      writeParts('pace', [String(Math.floor(whole / 60)), pad(whole % 60)]);
+      show(`${formatPace(answer)} min/km`, false);
+    } else {
+      // Keep the stored distance unformatted so it can be recalculated after changing modes.
+      inputs.distance.value = String(Number(answer.toFixed(4)));
+      show(`${formatDistance(answer)} km`, false);
+    }
+  }
+  function selectTarget(next) {
+    target = next;
+    Object.entries(groups).forEach(([group, parts]) => {
+      parts.forEach(id => { inputs[id].readOnly = group === target; });
+    });
+    buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.target === target)));
+    update();
+  }
+  Object.values(inputs).forEach(input => input.addEventListener('input', update));
+  buttons.forEach(button => button.addEventListener('click', () => selectTarget(button.dataset.target)));
+  document.getElementById('reset').addEventListener('click', () => {
+    Object.keys(groups).forEach(clearGroup);
+    selectTarget('time');
+    inputs.distance.focus();
+  });
+  selectTarget('time');
+})();
+</script>
+</body>
+</html>
